@@ -1,0 +1,23 @@
+# Core
+numpy
+opencv-python
+Pillow
+requests
+python-dotenv
+
+# Torch stack (install the build matching your CUDA: https://pytorch.org)
+torch
+torchvision
+
+# Models
+transformers          # GroundingDINO (IDEA-Research/grounding-dino-base) + tokenizers
+recognize-anything    # RAM++ (ram_plus); provides the `ram` package
+google-genai          # Imagen 3 edit via Vertex AI
+
+# Notebook visualization only (not needed by run.py)
+matplotlib
+jupyter
+
+# BiRefNet is a local repo, not a pip package:
+#   hq-mat/BiRefNet  (added to sys.path at runtime; weights pulled from
+#   zhengpeng7/birefnet on the Hugging Face Hub)

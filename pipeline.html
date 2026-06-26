@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amodal surface pipeline (main_short.ipynb)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root{--bg:#0d1117;--fg:#e6edf3;--mut:#8b949e;--card:#161b22;--bd:#30363d;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 64px;}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 28px}
+  .chart{background:var(--card);border:1px solid var(--bd);border-radius:12px;
+         padding:24px;overflow-x:auto;text-align:center}
+  h2{font-size:18px;margin:36px 0 12px;border-bottom:1px solid var(--bd);padding-bottom:6px}
+  table{width:100%;border-collapse:collapse;background:var(--card);
+        border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--bd);vertical-align:top}
+  th{background:#1c2330;color:var(--fg);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  code{background:#1c2330;padding:1px 6px;border-radius:5px;font-size:13px}
+  .mut{color:var(--mut)}
+  .legend span{display:inline-block;margin:0 14px 6px 0;font-size:13px}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:3px;
+       vertical-align:middle;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Amodal surface pipeline</h1>
+  <p class="sub"><code>main_short.ipynb</code> &mdash; recovers amodal wall/floor
+     (incl. parts hidden behind furniture) via an Imagen-generated empty room.
+     Needs <code>birefnet</code> conda env + Vertex ADC.</p>
+
+  <div class="legend">
+    <span><i class="dot" style="background:#1f6feb"></i>model / inference</span>
+    <span><i class="dot" style="background:#8957e5"></i>generative (billed)</span>
+    <span><i class="dot" style="background:#238636"></i>external API (billed)</span>
+    <span><i class="dot" style="background:#9e6a03"></i>mask op</span>
+    <span><i class="dot" style="background:#6e7681"></i>data / output</span>
+  </div>
+
+  <div class="chart">
+  <pre class="mermaid">
+flowchart TD
+    IN([Input image\noutput-test/&lt;SAMPLE&gt;/downsample.jpg]):::data
+
+    RAM["RAM++  ram_plus\nauto-tag image"]:::model
+    TAGS[/"tags (filtered:\ndrop wall/floor/ceiling/room/...)"/]:::data
+    DINO["GroundingDINO\nopen-vocab detect\n(tags = text prompt)"]:::model
+    NMS["class-agnostic NMS\nNMS_IOU=0.5"]:::maskop
+    BOX[/"object bboxes + labels"/]:::data
+
+    BIO["BiRefNet matte\nper box (+full fallback)"]:::model
+    RUGBOX[/"rug boxes = DINO boxes\nlabelled rug/carpet/mat"/]:::data
+    BIR["BiRefNet matte\nin rug box"]:::model
+    OBJ[/"object mask"/]:::data
+    RUG[/"rug mask"/]:::data
+    REM["remove = objects &cup; rug"]:::maskop
+
+    IMG["Imagen 3 capability\ninpaint-remove"]:::gen
+    EMPTY([empty_imagen.png\nbare room, pixel-aligned]):::data
+
+    API["image2scene API\nauto_detect on empty room"]:::api
+    WF[/"wall_masks / floor_masks\n(amodal, base64)"/]:::data
+
+    VIS["visible = surface &minus; objects\nfloor also &minus; rug"]:::maskop
+    OUT([masks + overlay.png\nsaved to sample dir]):::data
+
+    IN --> RAM --> TAGS --> DINO --> NMS --> BOX --> BIO --> OBJ
+    IN -. matte source .-> BIO
+    BOX --> RUGBOX --> BIR --> RUG
+    IN -. matte source .-> BIR
+    OBJ --> REM
+    RUG --> REM
+    REM --> IMG
+    IN -. base image .-> IMG
+    IMG --> EMPTY --> API --> WF --> VIS
+    OBJ --> VIS
+    RUG --> VIS
+    VIS --> OUT
+
+    classDef model fill:#0d2a52,stroke:#1f6feb,color:#e6edf3;
+    classDef gen   fill:#2a1a4a,stroke:#8957e5,color:#e6edf3;
+    classDef api   fill:#0f2e1a,stroke:#238636,color:#e6edf3;
+    classDef maskop fill:#3a2a06,stroke:#9e6a03,color:#e6edf3;
+    classDef data  fill:#1c2128,stroke:#6e7681,color:#c9d1d9;
+  </pre>
+  </div>
+
+  <h2>Stages</h2>
+  <table>
+    <tr><th>#</th><th>Stage</th><th>What</th><th>Code</th></tr>
+    <tr><td>1</td><td>RAM++ auto-tag</td>
+        <td>Tag the image; filter structural/scene tags; format as DINO prompt.</td>
+        <td><code>ram_autotag()</code></td></tr>
+    <tr><td>2</td><td>GroundingDINO + NMS</td>
+        <td>Open-vocab detect using RAM tags as prompt; class-agnostic NMS drops dup boxes.</td>
+        <td><code>detect_objects()</code></td></tr>
+    <tr><td>3</td><td>BiRefNet matte</td>
+        <td>Foreground inside each DINO box (+ full-image fallback) = object mask; rug mask = BiRefNet in the DINO boxes labelled rug/carpet/mat (<code>RUG_LABELS</code>).</td>
+        <td><code>birefnet_objects()</code>, <code>rug_boxes_from_labels()</code>, <code>birefnet_rug()</code></td></tr>
+    <tr><td>4</td><td>Imagen empty room</td>
+        <td>Inpaint-remove objects &cup; rug &rarr; bare room, pixel-aligned to original.</td>
+        <td><code>imagen_empty_room()</code></td></tr>
+    <tr><td>5</td><td>image2scene API</td>
+        <td>Re-run <code>auto_detect</code> on the empty room &rarr; amodal wall/floor masks.</td>
+        <td><code>api_autodetect()</code>, <code>_decode_masks()</code></td></tr>
+    <tr><td>6</td><td>Subtract &amp; save</td>
+        <td>visible = surface &minus; objects (floor also &minus; rug); write masks + overlay.</td>
+        <td><code>run_pipeline()</code></td></tr>
+  </table>
+
+  <h2>Notes</h2>
+  <ul class="mut">
+    <li>Each run bills <b>1 Imagen call + 1 image2scene API job</b> per sample.</li>
+    <li><b>SAM dropped</b> &mdash; wall/floor now come from the image2scene API re-run, not local SAM point prompts.</li>
+    <li><b>No original <code>auto_detect.json</code></b> input needed &mdash; only <code>downsample.jpg</code> per sample. Rug comes from DINO labels; wall/floor from the API re-run (which writes its own <code>from-api/auto_detect.json</code>).</li>
+    <li><code>run.py</code> mirrors this exactly (same functions); <code>main_short.ipynb</code> adds inline visualizations.</li>
+    <li>Tune <code>OBJECT_PROMPT</code> fallback, <code>RAM_EXCLUDE</code>, <code>RUG_LABELS</code>,
+        <code>DINO_BOX_THRESH</code>, <code>NMS_IOU</code> against the <code>dinoviz1</code> output.</li>
+  </ul>
+</div>
+<script>mermaid.initialize({startOnLoad:true,theme:"dark",
+  flowchart:{useMaxWidth:true,htmlLabels:true}});</script>
+</body>
+</html>
