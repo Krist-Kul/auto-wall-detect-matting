@@ -67,9 +67,14 @@ flowchart TD
     API["image2scene API\nauto_detect on empty room"]:::api
     WF[/"wall_masks / floor_masks\n(amodal, base64)"/]:::data
 
+    MOGE["image2scene /run_moge\nmonocular geometry (original)"]:::api
+    MOGEOUT([moge/\ngeometry result]):::data
+
     VIS["visible = surface &minus; objects\nfloor also &minus; rug"]:::maskop
     OUT([masks + overlay.png\nsaved to sample dir]):::data
 
+    IN -. original (kicked off first) .-> MOGE
+    MOGE -. collected last .-> MOGEOUT --> OUT
     IN --> RAM --> TAGS --> DINO --> NMS --> BOX --> BIO --> OBJ
     IN -. matte source .-> BIO
     BOX --> RUGBOX --> BIR --> RUG
@@ -94,6 +99,9 @@ flowchart TD
   <h2>Stages</h2>
   <table>
     <tr><th>#</th><th>Stage</th><th>What</th><th>Code</th></tr>
+    <tr><td>0</td><td>MoGe (parallel)</td>
+        <td>Kick off monocular geometry on the <b>original</b> image first; collect the result at the last step (runs in parallel). Saved to <code>moge/</code>.</td>
+        <td><code>moge_start()</code>, <code>moge_fetch()</code></td></tr>
     <tr><td>1</td><td>RAM++ auto-tag</td>
         <td>Tag the image; filter structural/scene tags; format as DINO prompt.</td>
         <td><code>ram_autotag()</code></td></tr>

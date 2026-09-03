@@ -1,0 +1,36 @@
+# --- secrets ---
+.env
+*.json.key
+*-service-account*.json
+
+# --- model weights / vendored model repos (huge, fetched separately) ---
+weights/
+hq-mat/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# --- generated per-sample outputs ---
+users/
+users_*/
+output-test/
+image2scene/
+result/
+compare_sd_diff/
+!compare_sd_diff/metrics.csv
+!compare_sd_diff/metrics.json
+**/from-api/
+**/moge/
+**/masked_images/
+**/normal_out/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# --- os ---
+.DS_Store
