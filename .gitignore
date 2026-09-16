@@ -18,8 +18,6 @@ output-test/
 image2scene/
 result/
 compare_sd_diff/
-!compare_sd_diff/metrics.csv
-!compare_sd_diff/metrics.json
 **/from-api/
 **/moge/
 **/masked_images/
