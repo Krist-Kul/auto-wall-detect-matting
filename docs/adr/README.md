@@ -1,7 +1,8 @@
 # Architecture Decision Records
 
 Decisions for the wall/floor surface-mask pipeline, captured during the grilling session.
-See `../pipeline-design.md` for the assembled design and `../glossary.md` for terms.
+See `../SUMMARY.md` for the full technical walkthrough, `../pipeline-design.md` for the
+assembled design and `../glossary.md` for terms.
 
 | ADR | Title | Status |
 |-----|-------|--------|

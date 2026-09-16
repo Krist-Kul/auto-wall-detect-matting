@@ -16,6 +16,9 @@ Two families of pipeline live here:
 > geometry running in parallel. Everything else in this repo is either an ablation of it,
 > a downstream refinement, or the training that produced its BiRefNet checkpoint.
 
+**New to the project?** Read [`docs/SUMMARY.md`](docs/SUMMARY.md) first — a full technical
+walkthrough of how the pipeline works and why, written for an engineer picking this up cold.
+
 See [`pipeline.html`](pipeline.html) for the flow diagram, [`docs/`](docs/) for the design
 record.
 
