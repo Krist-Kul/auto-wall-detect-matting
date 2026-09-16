@@ -1,0 +1,1018 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>auto-wall-detect-matting — visual guide</title>
+<style>
+  @page {
+    size: A4;
+    margin: 13mm 13mm 12mm 13mm;
+    @bottom-left {
+      content: "auto-wall-detect-matting — visual guide";
+      font-family: "DejaVu Sans"; font-size: 7pt; color: #9aa3ad;
+    }
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-family: "DejaVu Sans"; font-size: 7pt; color: #9aa3ad;
+    }
+  }
+  @page :first { margin: 0; @bottom-left { content: "" } @bottom-right { content: "" } }
+
+  :root {
+    --ink:      #16202b;
+    --ink-soft: #55616e;
+    --line:     #dde3ea;
+    --bg-soft:  #f5f7fa;
+    --detect:   #c2610a;
+    --detect-bg:#fdf3e7;
+    --gen:      #7b3fb5;
+    --gen-bg:   #f5eefc;
+    --seg:      #10609e;
+    --seg-bg:   #eaf2fa;
+    --derive:   #1d7a4c;
+    --derive-bg:#e9f6ef;
+    --geo:      #5a6672;
+    --geo-bg:   #f0f2f5;
+    --warn:     #b3261e;
+    --warn-bg:  #fdeeed;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: "DejaVu Sans", sans-serif;
+    font-size: 8.6pt; line-height: 1.42; color: var(--ink); margin: 0;
+  }
+  code, .mono { font-family: "DejaVu Sans Mono", monospace; }
+  code {
+    font-size: 8pt; background: #eef1f5; color: #0f4c81;
+    padding: 0.5pt 2pt; border-radius: 2px;
+  }
+  b, strong { font-weight: bold; }
+  p { margin: 0 0 5pt; }
+
+  /* ---------------------------------------------------------------- cover */
+  .cover {
+    height: 297mm; padding: 22mm 20mm 18mm; page-break-after: always;
+    background: #16202b; color: #fff; position: relative;
+  }
+  .cover .kicker {
+    font-size: 8.5pt; letter-spacing: 2.4pt; text-transform: uppercase;
+    color: #7fb2e5; margin-bottom: 7mm;
+  }
+  .cover h1 {
+    font-size: 28pt; line-height: 1.08; margin: 0 0 4mm; font-weight: bold;
+    letter-spacing: -0.5pt;
+  }
+  .cover .tag { font-size: 12.5pt; line-height: 1.45; color: #c2ccd6; margin: 0 0 9mm; }
+  .cover .rule { height: 3px; width: 46mm; background: #7fb2e5; margin-bottom: 8mm; }
+  .cover .onesent {
+    border-left: 3px solid #7fb2e5; padding: 3.5mm 0 3.5mm 6mm; margin-bottom: 9mm;
+    font-size: 11pt; line-height: 1.5; color: #e8edf2;
+  }
+  .cover .foot {
+    position: absolute; bottom: 18mm; left: 20mm; right: 20mm;
+    font-size: 8pt; color: #8b98a6; border-top: 1px solid #2c3a49; padding-top: 4mm;
+  }
+  .io { width: 100%; border-collapse: collapse; margin-bottom: 10mm; }
+  .io td { width: 33.33%; vertical-align: middle; padding: 0; }
+  .io .box {
+    background: #22303f; border: 1px solid #36485c; border-radius: 4px;
+    padding: 4mm 4mm; text-align: center;
+  }
+  .io .lbl { font-size: 7.5pt; letter-spacing: 1.4pt; color: #7fb2e5;
+             text-transform: uppercase; margin-bottom: 2mm; }
+  .io .val { font-size: 10pt; color: #fff; line-height: 1.35; }
+  .io .arrow { text-align: center; font-size: 16pt; color: #7fb2e5; }
+  .toc { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  .toc td { padding: 1.8mm 0; border-bottom: 1px solid #22303f; vertical-align: top; }
+  .toc td.n { width: 8mm; color: #7fb2e5; font-weight: bold; }
+  .toc td.t { color: #e8edf2; }
+  .toc td.d { color: #8b98a6; text-align: right; font-size: 8.2pt; }
+  .toc .hd { font-size: 7.5pt; letter-spacing: 2pt; text-transform: uppercase;
+             color: #7fb2e5; padding-bottom: 2.5mm; border-bottom: none; }
+
+  /* -------------------------------------------------------------- headings */
+  h2 {
+    font-size: 14pt; margin: 0 0 0.8mm; letter-spacing: -0.2pt;
+    page-break-after: avoid; page-break-before: auto;
+  }
+  h2 .num {
+    display: inline-block; background: var(--ink); color: #fff;
+    font-size: 9pt; width: 7mm; height: 7mm; line-height: 7mm;
+    text-align: center; border-radius: 3px; margin-right: 3mm;
+    vertical-align: 1pt;
+  }
+  .sub {
+    color: var(--ink-soft); font-size: 9pt; margin: 0 0 3.5mm; padding-left: 10mm;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 10pt; margin: 4.5mm 0 1.5mm; page-break-after: avoid;
+    border-bottom: 1px solid var(--line); padding-bottom: 1.5mm;
+  }
+  h4 { font-size: 9.2pt; margin: 3mm 0 1.2mm; page-break-after: avoid; }
+  .page { margin-top: 8mm; }
+  .keep { page-break-inside: avoid; }
+  table.keep { page-break-inside: avoid; }
+
+  /* -------------------------------------------------------------- callouts */
+  .callout {
+    border-radius: 4px; padding: 3mm 4mm; margin: 3mm 0;
+    page-break-inside: avoid; font-size: 8.6pt;
+  }
+  .callout .ct {
+    font-size: 7.5pt; letter-spacing: 1.4pt; text-transform: uppercase;
+    font-weight: bold; margin-bottom: 1.5mm;
+  }
+  .key   { background: #eef4fb; border-left: 3px solid var(--seg); }
+  .key .ct { color: var(--seg); }
+  .warn  { background: var(--warn-bg); border-left: 3px solid var(--warn); }
+  .warn .ct { color: var(--warn); }
+  .good  { background: var(--derive-bg); border-left: 3px solid var(--derive); }
+  .good .ct { color: var(--derive); }
+
+  /* ------------------------------------------------------------ stage flow */
+  .stage {
+    border: 1px solid var(--line); border-left: 4px solid var(--geo);
+    border-radius: 4px; padding: 2.6mm 3.2mm; page-break-inside: avoid;
+    margin-bottom: 0;
+  }
+  .stage .head { margin-bottom: 1mm; }
+  .stage .chip {
+    display: inline-block; font-size: 7.5pt; font-weight: bold; color: #fff;
+    background: var(--geo); border-radius: 3px; padding: 0.7mm 2mm;
+    margin-right: 2.5mm; vertical-align: 1pt;
+  }
+  .stage .title { font-size: 10pt; font-weight: bold; }
+  .stage .models { font-size: 8pt; color: var(--ink-soft); margin-left: 2mm; }
+  .stage .body { font-size: 8.2pt; line-height: 1.4; }
+  .stage .out {
+    margin-top: 1.4mm; font-size: 7.8pt; font-family: "DejaVu Sans Mono", monospace;
+    color: var(--ink-soft);
+  }
+  .stage .out b { color: var(--ink); }
+  .s-detect { border-left-color: var(--detect); }
+  .s-detect .chip { background: var(--detect); }
+  .s-gen    { border-left-color: var(--gen); }
+  .s-gen .chip { background: var(--gen); }
+  .s-seg    { border-left-color: var(--seg); }
+  .s-seg .chip { background: var(--seg); }
+  .s-derive { border-left-color: var(--derive); }
+  .s-derive .chip { background: var(--derive); }
+  .down { text-align: center; color: #b4bdc7; font-size: 9pt; line-height: 1; margin: 0.8mm 0; }
+
+  /* ---------------------------------------------------------------- tables */
+  table.t { width: 100%; border-collapse: collapse; font-size: 8.2pt; margin: 2.2mm 0 3mm; }
+  table.t th {
+    text-align: left; background: var(--ink); color: #fff; font-size: 7.2pt;
+    letter-spacing: 0.6pt; text-transform: uppercase; padding: 1.6mm 2.2mm;
+  }
+  table.t td { padding: 1.6mm 2.2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.t tr:nth-child(even) td { background: #fafbfc; }
+  table.t.fix td:first-child { font-weight: bold; }
+
+  /* ----------------------------------------------------------------- cards */
+  .grid { width: 100%; border-collapse: separate; border-spacing: 2.6mm 2.6mm; margin: -2.6mm 0 1.5mm -2.6mm; }
+  .grid td { width: 50%; vertical-align: top; padding: 0; }
+  .card {
+    border: 1px solid var(--line); border-radius: 4px; padding: 2.8mm 3.2mm;
+    page-break-inside: avoid; height: 100%;
+  }
+  .card .cn { font-size: 10pt; font-weight: bold; margin-bottom: 0.5mm; }
+  .card .role { font-size: 7.5pt; letter-spacing: 1pt; text-transform: uppercase;
+                color: var(--ink-soft); margin-bottom: 2mm; }
+  .card .why { font-size: 8.2pt; line-height: 1.4; }
+  .card .blind {
+    margin-top: 2.5mm; padding-top: 2mm; border-top: 1px dashed var(--line);
+    font-size: 8pt; color: var(--warn);
+  }
+  .card.detect { border-top: 3px solid var(--detect); }
+  .card.gen    { border-top: 3px solid var(--gen); }
+  .card.seg    { border-top: 3px solid var(--seg); }
+  .card.geo    { border-top: 3px solid var(--geo); }
+
+  /* --------------------------------------------------------------- compare */
+  .vs { width: 100%; border-collapse: separate; border-spacing: 3mm 0; margin-left: -3mm; }
+  .vs td { width: 50%; vertical-align: top; padding: 0; }
+  .vs .pane { border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .vs .ph { padding: 2mm 3mm; font-weight: bold; font-size: 9.2pt; color: #fff; }
+  .vs .pb { padding: 2.4mm 3mm; font-size: 8.2pt; line-height: 1.4; }
+  .vs .pb .step { margin-bottom: 1.5mm; }
+  .vs .ok   { background: var(--derive); }
+  .vs .bad  { background: var(--warn); }
+  .vs .verdict { font-weight: bold; margin-top: 2mm; padding-top: 2mm; border-top: 1px solid var(--line); }
+
+  /* ----------------------------------------------------------------- misc */
+  pre {
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 4px;
+    padding: 2.4mm 3mm; font-family: "DejaVu Sans Mono", monospace;
+    font-size: 7.4pt; line-height: 1.4; margin: 2mm 0 3mm;
+    white-space: pre; page-break-inside: avoid;
+  }
+  pre .c { color: #7b8794; }
+  ul, ol { margin: 0 0 5pt; padding-left: 5mm; }
+  li { margin-bottom: 1.1mm; }
+  .stat { width: 100%; border-collapse: separate; border-spacing: 2.5mm 0; margin-left: -2.5mm; }
+  .stat td { width: 25%; padding: 0; vertical-align: top; }
+  .stat .b {
+    border: 1px solid var(--line); border-radius: 4px; padding: 3mm 2mm;
+    text-align: center; background: var(--bg-soft);
+  }
+  .stat .n { font-size: 15pt; font-weight: bold; line-height: 1.1; }
+  .stat .l { font-size: 7.5pt; color: var(--ink-soft); margin-top: 1mm; line-height: 1.3; }
+  .lead { font-size: 9.4pt; color: var(--ink-soft); margin-bottom: 3mm;
+          page-break-before: avoid; }
+  .tiny { font-size: 8pt; color: var(--ink-soft); }
+</style>
+
+<!-- =============================================================== COVER -->
+<div class="cover">
+  <div class="kicker">Technical guide</div>
+  <h1>auto-wall-<br>detect-matting</h1>
+  <div class="rule"></div>
+  <div class="tag">Wall and floor masks from one room photo —<br>including the wall hidden behind the sofa.</div>
+
+  <div class="onesent">
+    We cannot segment what is hidden.<br>
+    <b>So we delete the furniture first, then segment the empty room.</b>
+  </div>
+
+  <table class="io">
+    <tr>
+      <td><div class="box">
+        <div class="lbl">Input</div>
+        <div class="val">one photo<br><span class="mono" style="font-size:8pt">original.jpg</span></div>
+      </div></td>
+      <td class="arrow">&#10230;</td>
+      <td><div class="box">
+        <div class="lbl">Output</div>
+        <div class="val">one mask per wall,<br>per floor &mdash; surface only</div>
+      </div></td>
+    </tr>
+  </table>
+
+  <table class="toc">
+    <tr><td class="hd" colspan="3">What is inside</td></tr>
+    <tr><td class="n">1</td><td class="t">What we are actually solving</td><td class="d">the three requirements</td></tr>
+    <tr><td class="n">2</td><td class="t">The core idea</td><td class="d">pipeline, stage by stage</td></tr>
+    <tr><td class="n">3</td><td class="t">Five models, five jobs</td><td class="d">why each one is there</td></tr>
+    <tr><td class="n">4</td><td class="t">Why there are two detectors</td><td class="d">the blind-spot argument</td></tr>
+    <tr><td class="n">5</td><td class="t">Running it</td><td class="d">setup, notebook, CLI</td></tr>
+    <tr><td class="n">6</td><td class="t">When the result is wrong</td><td class="d">symptom &rarr; knob</td></tr>
+    <tr><td class="n">7</td><td class="t">The variants are experiments</td><td class="d">what each one proved</td></tr>
+    <tr><td class="n">8</td><td class="t">The matting stage</td><td class="d">soft edges, and reading a metric</td></tr>
+    <tr><td class="n">9</td><td class="t">The other road: structure-first</td><td class="d">no Imagen, no API</td></tr>
+    <tr><td class="n">10</td><td class="t">Training, in brief</td><td class="d">Hypersim fine-tune</td></tr>
+    <tr><td class="n">11</td><td class="t">What to take away</td><td class="d">transferable lessons</td></tr>
+  </table>
+
+  <div class="foot">
+    Read this first, then open <span class="mono">main_gd.ipynb</span>.<br>
+    Full written reference: <span class="mono">docs/SUMMARY.md</span> &nbsp;&middot;&nbsp;
+    decision trail: <span class="mono">docs/adr/</span>
+  </div>
+</div>
+
+<!-- ============================================================ 1 PROBLEM -->
+<h2><span class="num">1</span>What we are actually solving</h2>
+<div class="sub">And why a normal segmentation model cannot do it.</div>
+
+<p class="lead">The job: hand in a photo of a room, get back a clean mask for each wall and
+the floor. Downstream, someone repaints a wall or swaps the flooring. That single use case
+creates three hard requirements.</p>
+
+<table class="grid">
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">1. Surface only</div>
+      <div class="role">Recall beats precision</div>
+      <div class="why">One sofa pixel left inside the wall mask becomes a
+      <b>sofa painted the new colour</b>. Missing an object is far worse than
+      trimming a little real wall.</div>
+    </div></td>
+    <td><div class="card seg">
+      <div class="cn">2. Include what is hidden</div>
+      <div class="role">The amodal requirement</div>
+      <div class="why">Repaint the wall, then move the sofa &mdash; the strip behind it
+      must already be painted. This is the hard part, and the reason the pipeline
+      looks the way it does.</div>
+    </div></td>
+  </tr>
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">3. One mask per wall</div>
+      <div class="role">Instances, not classes</div>
+      <div class="why">&ldquo;Paint <i>that</i> wall&rdquo; needs the left wall and the far
+      wall as separate masks &mdash; not one merged <span class="mono">wall</span> class.</div>
+    </div></td>
+    <td><div class="card seg">
+      <div class="cn">Bonus: soft edges</div>
+      <div class="role">The matting stage</div>
+      <div class="why">Binary masks have stair-step edges and cannot represent a
+      curtain fringe. A separate matting pass turns the hard mask into an alpha.</div>
+    </div></td>
+  </tr>
+</table>
+
+<h3>Why off-the-shelf semantic segmentation fails all three</h3>
+
+<table class="t">
+  <tr><th style="width:34%">An ADE20K-style wall/floor model&hellip;</th><th>&hellip;breaks which requirement</th></tr>
+  <tr><td>labels the pixels behind the sofa as <span class="mono">sofa</span></td>
+      <td><b>Req 2.</b> You get visible wall only. No amodal output exists, at any confidence threshold.</td></tr>
+  <tr><td>has exactly one <span class="mono">wall</span> class</td>
+      <td><b>Req 3.</b> Four walls come back as one connected blob. No instance separation.</td></tr>
+  <tr><td>emits hard, blocky boundaries</td>
+      <td><b>Bonus.</b> Edge quality is a different problem needing a different model.</td></tr>
+</table>
+
+<div class="callout key">
+  <div class="ct">The reframe</div>
+  &ldquo;Segment the wall behind the sofa&rdquo; is not solvable by a segmenter &mdash; the
+  pixels are simply not there. <b>&ldquo;Remove the sofa, then segment&rdquo; is solvable</b>,
+  because it moves the impossible half of the task to a model that is genuinely good at it:
+  a generative inpainter.
+</div>
+
+<!-- ============================================================== 2 IDEA -->
+<div class="page"></div>
+<h2><span class="num">2</span>The core idea</h2>
+<div class="sub">Delete the furniture, then segment the empty room.</div>
+
+<p class="lead">Detect every object, generatively inpaint it out of the photo, and run
+surface segmentation on the <i>result</i>. The segmenter now sees unobstructed wall, so its
+output is amodal <b>by construction</b> &mdash; no amodal-specific model, no mask-completion
+network, nothing to train.</p>
+
+<div class="callout key">
+  <div class="ct">The property that makes this sound</div>
+  Imagen's <span class="mono">EDIT_MODE_INPAINT_REMOVAL</span> takes an explicit mask and
+  rewrites <b>only the masked pixels</b>. Every other pixel is byte-identical to the input.
+  So the empty room shares a pixel grid with the original photo, and a mask computed on the
+  empty room applies to the original directly &mdash;
+  <b>no homography, no re-alignment, no registration error.</b>
+</div>
+
+<p>Once you have that, both deliverables fall out of one run. The expensive part is the
+amodal surface; the visible variant is a free subtraction.</p>
+
+<pre>amodal_surface  = segment(empty_room)              <span class="c">&larr; the expensive part</span>
+visible_surface = amodal_surface &minus; objects          <span class="c">&larr; free</span>
+visible_floor   = amodal_floor  &minus; objects &minus; rug    <span class="c">&larr; free</span></pre>
+
+<h3>The pipeline, stage by stage</h3>
+
+<div class="stage s-geo" style="border-left-color:var(--geo)">
+  <div class="head"><span class="chip">0</span><span class="title">Kick off geometry</span>
+  <span class="models">MoGe &middot; async, on the original image</span></div>
+  <div class="body">Fired first, collected last, so it runs server-side while everything
+  below runs locally. Pure latency hiding &mdash; costs roughly zero wall-clock instead of ~30 s.</div>
+  <div class="out">&rarr; <b>moge/</b></div>
+</div>
+<div class="down">&#9660;</div>
+
+<div class="stage s-detect">
+  <div class="head"><span class="chip">1</span><span class="title">Find everything that is not surface</span>
+  <span class="models">RAM++ &rarr; GroundingDINO &rarr; BiRefNet</span></div>
+  <div class="body"><b>RAM++</b> tags what is in this room. Structural words (wall, floor,
+  ceiling, room&hellip;) are filtered out, and the rest becomes the <b>GroundingDINO</b>
+  open-vocab prompt, which returns boxes. <b>BiRefNet</b> mattes the true silhouette inside
+  each box (plus one full-image pass as a safety net). Boxes labelled rug/carpet/mat get
+  their own mask.</div>
+  <div class="out">&rarr; <b>object_mask_birefnet.png</b> &nbsp; <b>rug_mask_birefnet.png</b></div>
+</div>
+<div class="down">&#9660;</div>
+
+<div class="stage s-gen">
+  <div class="head"><span class="chip">2</span><span class="title">Erase them</span>
+  <span class="models">Imagen 3 &middot; inpaint removal</span></div>
+  <div class="body">Send <span class="mono">objects &cup; rug</span> as the mask with an
+  <b>empty prompt</b>. Imagen fills the holes with plausible wall and floor. Output is
+  pixel-aligned to the input.</div>
+  <div class="out">&rarr; <b>empty_imagen.png</b> &nbsp; <b>inpaint_mask.png</b></div>
+</div>
+<div class="down">&#9660;</div>
+
+<div class="stage s-seg">
+  <div class="head"><span class="chip">3</span><span class="title">Segment the empty room</span>
+  <span class="models">image2scene API &middot; auto_detect</span></div>
+  <div class="body">Re-run surface detection on the emptied photo. Because the furniture is
+  gone, the wall and floor masks it returns are <b>amodal</b> &mdash; and they arrive as a
+  list, one per surface, which is where wall instances come from.</div>
+  <div class="out">&rarr; <b>wall_mask_amodal.png</b> &nbsp; <b>floor_mask_amodal.png</b> &nbsp; <b>from-api/</b></div>
+</div>
+<div class="down">&#9660;</div>
+
+<div class="stage s-derive">
+  <div class="head"><span class="chip">4</span><span class="title">Subtract to get the visible variant</span>
+  <span class="models">pure numpy &middot; no model</span></div>
+  <div class="body">Two boolean operations. Kept per instance, so each wall also gets its
+  own visible mask, plus a colour overlay and per-stage timings.</div>
+  <div class="out">&rarr; <b>wall_mask_visible.png</b> &nbsp; <b>masked_images/wall_mask_visible_NN.png</b> &nbsp; <b>overlay.png</b> &nbsp; <b>time.txt</b></div>
+</div>
+
+<!-- ============================================================ 3 MODELS -->
+<div class="page"></div>
+<h2><span class="num">3</span>Five models, five jobs</h2>
+<div class="sub">This is a pipeline of specialists, not one big model. Each stage is separately inspectable when a result goes wrong.</div>
+
+<table class="grid">
+  <tr>
+    <td><div class="card detect">
+      <div class="cn">RAM++</div>
+      <div class="role">Names what is in this room</div>
+      <div class="why">GroundingDINO is open-vocab but <b>closed-set per call</b> &mdash; it
+      only finds classes you name. A hardcoded list misses whatever <i>this</i> room happens
+      to contain. RAM++ generates the vocabulary per image.</div>
+      <div class="blind">Also emits scene words &mdash; wall, floor, ceiling. Those must be
+      filtered or you will erase the surface itself.</div>
+    </div></td>
+    <td><div class="card detect">
+      <div class="cn">GroundingDINO</div>
+      <div class="role">Turns names into boxes</div>
+      <div class="why">RAM++ is a tagger: labels, no localization. Something has to convert
+      tag &rarr; box. Class-agnostic NMS then removes the duplicate boxes that synonyms
+      (sofa / couch / furniture) produce.</div>
+      <div class="blind">Prone to false positives on mirror &harr; window and framed art
+      &harr; window. Thresholds need per-deployment tuning.</div>
+    </div></td>
+  </tr>
+  <tr>
+    <td><div class="card detect">
+      <div class="cn">BiRefNet</div>
+      <div class="role">Pixel-accurate silhouette</div>
+      <div class="why">A box around a chair still contains wall. BiRefNet mattes the real
+      shape inside each box &mdash; cropping per box is what gives small objects enough
+      resolution to come out clean.</div>
+      <div class="blind">Structurally blind to flat wall-anchored objects. See section 4 &mdash;
+      this is the single most important quirk in the repo.</div>
+    </div></td>
+    <td><div class="card gen">
+      <div class="cn">Imagen 3</div>
+      <div class="role">Fills the holes</div>
+      <div class="why">This is what makes the output amodal. Its masked-inpaint contract
+      (only masked pixels change) is what removes the need for any re-alignment step.</div>
+      <div class="blind">The only billed, remote, non-deterministic stage. Same input can
+      give slightly different empty rooms &mdash; do not expect bit-reproducibility.</div>
+    </div></td>
+  </tr>
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">image2scene API</div>
+      <div class="role">Wall / floor instances</div>
+      <div class="why">An internal service returning a <b>list</b> of per-wall masks rather
+      than one merged class. Instance separation is a hard requirement, so this is why the
+      list is decoded individually and the union derived from it &mdash; never the reverse.</div>
+    </div></td>
+    <td><div class="card geo">
+      <div class="cn">MoGe</div>
+      <div class="role">Monocular geometry</div>
+      <div class="why">Not used by the mask maths at all &mdash; collected for downstream 3-D
+      consumers. Started at stage 0 and fetched at the end purely so its latency overlaps
+      everything else.</div>
+    </div></td>
+  </tr>
+</table>
+
+<div class="callout good">
+  <div class="ct">Pattern worth stealing</div>
+  <b>Generate the vocabulary per input.</b> Open-vocab detectors are closed-set per call, so
+  a fixed class list quietly caps your recall. Putting a tagger in front turns a fixed list
+  into an adaptive one. The repo goes one step further: <span class="mono">plug</span> and
+  <span class="mono">socket</span> enter the prompt <i>only</i> when RAM++ actually tagged
+  one &mdash; pay a class's false-positive cost only when there is evidence it is present.
+</div>
+
+<!-- ======================================================== 4 BLIND SPOT -->
+<div class="page"></div>
+<h2><span class="num">4</span>Why there are two detectors</h2>
+<div class="sub">The most important non-obvious decision in the project.</div>
+
+<p class="lead"><b>BiRefNet is a salient 3-D foreground segmenter.</b> It is excellent at
+sofas, tables, plants, boxes &mdash; anything that visually pops off the background. It is
+<b>structurally blind</b> to flat, wall-anchored items.</p>
+
+<table class="vs">
+  <tr>
+    <td><div class="pane">
+      <div class="ph ok">BiRefNet sees this</div>
+      <div class="pb">
+        <div class="step">sofa &middot; table &middot; chair &middot; plant &middot; lamp &middot; box &middot; pet</div>
+        <div class="step" style="color:var(--ink-soft)">Objects that sit <i>in front of</i> the
+        wall. Clear depth cue, clear saliency, class-agnostic &mdash; it does not need to know
+        what the thing is called.</div>
+      </div>
+    </div></td>
+    <td><div class="pane">
+      <div class="ph bad">BiRefNet cannot see this</div>
+      <div class="pb">
+        <div class="step">window &middot; mirror &middot; poster &middot; painting &middot; wall-mounted TV &middot; clock</div>
+        <div class="step" style="color:var(--ink-soft)">Objects <i>in the wall plane</i>. No
+        foreground/background depth cue, not salient. They stay in your wall mask, silently.</div>
+      </div>
+    </div></td>
+  </tr>
+</table>
+
+<p style="margin-top:4mm">That is not a bug or a tuning failure &mdash; it is a direct
+consequence of what &ldquo;salient foreground&rdquo; means. No threshold fixes it. So a
+second detector is added whose entire job is to cover the first one's blind spot:</p>
+
+<pre>objects_all = BiRefNet( any 3-D foreground, class-agnostic )
+            &cup; GroundingDINO( named flat occluders )</pre>
+
+<p>&ldquo;A surface without any object&rdquo; is therefore <b>defined</b> as: any 3-D
+foreground object, plus any <i>named</i> flat occluder. Which makes the residual failure mode
+explicit and honest &mdash; <b>flat, unnamed wall items</b>. When you find a new one, you add
+it to the prompt vocabulary.</p>
+
+<div class="callout key">
+  <div class="ct">Design rule</div>
+  Build the second detector around the first one's <b>blind spot</b>, not around its error
+  rate. Two models that fail on the same inputs are one model with extra latency.
+</div>
+
+<h3>And why object anchoring never restricts subtraction</h3>
+
+<p>Objects can be described as wall-anchored (a mirror) or floor-anchored (a sofa). It is
+tempting to subtract only wall-anchored objects from the wall mask. <b>Don't.</b></p>
+
+<table class="vs">
+  <tr>
+    <td><div class="pane">
+      <div class="ph bad">Tempting, wrong</div>
+      <div class="pb">
+        <div class="step"><span class="mono">wall &minus; wall_anchored_objects</span></div>
+        <div class="step" style="color:var(--ink-soft)">A sofa back, a tall plant, a bookshelf
+        &mdash; all floor-anchored, all occluding the wall. Their pixels survive into the wall
+        mask and get repainted.</div>
+      </div>
+    </div></td>
+    <td><div class="pane">
+      <div class="ph ok">Correct, and simpler</div>
+      <div class="pb">
+        <div class="step"><span class="mono">wall &minus; all_objects</span></div>
+        <div class="step" style="color:var(--ink-soft)">An object pixel is never legitimately
+        part of <i>any</i> surface. Anchoring labels survive as QA metadata only.</div>
+        <div class="verdict">Simpler <i>and</i> more correct &mdash; a rare combination.</div>
+      </div>
+    </div></td>
+  </tr>
+</table>
+
+<!-- =========================================================== 5 RUN IT -->
+<div class="page"></div>
+<h2><span class="num">5</span>Running it</h2>
+<div class="sub">Setup, data layout, and the two ways to invoke the pipeline.</div>
+
+<h3>Environment</h3>
+<pre>conda create -n birefnet python=3.10 &amp;&amp; conda activate birefnet
+pip install -r requirements.txt
+<span class="c"># install torch/torchvision for YOUR cuda: https://pytorch.org</span>
+gcloud auth application-default login   <span class="c"># Imagen uses ADC, not an API key</span>
+
+<span class="c"># .env at the repo root:</span>
+GOOGLE_CLOUD_PROJECT=&lt;your-gcp-project-id&gt;
+GOOGLE_CLOUD_LOCATION=us-central1</pre>
+
+<p>Weights and vendored model repos are <b>not in git</b> and must be fetched separately into
+<span class="mono">weights/</span> and <span class="mono">hq-mat/</span>: BiRefNet source +
+Hypersim fine-tunes, RAM++ checkpoint, SDMatte, DiffMatte, CLIP ViT-B/32.</p>
+
+<h3>Data layout</h3>
+<p>One folder per sample containing <span class="mono">original.jpg</span>. That is the only
+required input &mdash; everything else is written back beside it. Each pipeline variant has
+its own root so variants never overwrite each other.</p>
+
+<pre>users_gd/user_8/original.jpg          <span class="c">&larr; main_gd.ipynb reads this, writes everything else here</span>
+users_new_gd/  users_yolo/  ...       <span class="c">&larr; one root per variant</span>
+image2scene/                          <span class="c">&larr; run_api.py baseline (also the matting trimap source)</span>
+users_sd/  users_diff/                <span class="c">&larr; matting outputs</span></pre>
+
+<h3>The notebook &mdash; recommended</h3>
+<p>Open <span class="mono">main_gd.ipynb</span> and run all cells.
+<span class="mono">load_models()</span> runs on import, then:</p>
+<pre>SAMPLE = "user_8"
+res = run_pipeline(OUTPUT_DIR / SAMPLE, thresh=0.5)</pre>
+
+<p><span class="mono">run_pipeline()</span> returns a dict holding <i>every</i> intermediate
+&mdash; boxes, labels, tags, prompt, mattes, empty room, masks, timings &mdash; which the cells
+below it consume. Keeping intermediates in memory is deliberate: tuning means looking at stage
+outputs, not at the final mask.</p>
+
+<h4>The three inspection cells, in the order you should use them</h4>
+<table class="t">
+  <tr><th style="width:7mm">#</th><th style="width:62mm">Cell</th><th>What it answers</th></tr>
+  <tr><td><b>1</b></td><td>All DINO boxes + labels, the RAM tag list, the assembled prompt</td>
+      <td>Were the right things even <i>detected</i>? Almost every bad result starts here.</td></tr>
+  <tr><td><b>2</b></td><td>Per-object BiRefNet matte grid &mdash; one tile per box, plus the full-image fallback</td>
+      <td>Detection was fine, so is the <i>silhouette</i> right inside each box?</td></tr>
+  <tr><td><b>3</b></td><td>3&times;3 panel: input, empty room, objects, rug, amodal + visible wall/floor, overlay</td>
+      <td>Did Imagen erase cleanly, and did the subtraction land?</td></tr>
+</table>
+
+<h3>Command line</h3>
+<pre>python run.py --sample living_23                    <span class="c"># one sample</span>
+python run.py --sample Bedroom --sample living_23   <span class="c"># several</span>
+python run.py --all                                 <span class="c"># every folder with downsample.jpg</span>
+python run.py --all --thresh 0.4                    <span class="c"># looser object threshold</span>
+
+python run_api.py --src users_gd --out image2scene --workers 5   <span class="c"># raw API baseline</span></pre>
+
+<div class="callout warn">
+  <div class="ct">Costs money</div>
+  Every empty-room run bills <b>1 Imagen call + 1 image2scene job + 1 MoGe job per sample</b>.
+  There is no dry-run mode, and the notebook's batch cell ships commented out on purpose.
+  Test on one sample before any batch.
+</div>
+
+<p class="tiny"><b>Two path quirks.</b> <span class="mono">run.py</span> reads
+<span class="mono">downsample.jpg</span> from <span class="mono">output-test/</span>, while
+<span class="mono">main_gd.ipynb</span> reads <span class="mono">original.jpg</span> from
+<span class="mono">users_gd/</span> &mdash; historical drift, check which you have. And
+<span class="mono">run.py</span> looks for the RAM++ checkpoint at the repo root while the
+notebooks look in <span class="mono">weights/</span>; symlink if you use the CLI.</p>
+
+<!-- =========================================================== 6 TUNING -->
+<div class="page"></div>
+<h2><span class="num">6</span>When the result is wrong</h2>
+<div class="sub">Symptom &rarr; cause &rarr; knob. Every knob lives at the top of the config cell.</div>
+
+<table class="t fix">
+  <tr><th style="width:33%">Symptom</th><th style="width:30%">Cause</th><th>Fix</th></tr>
+  <tr><td>Object left in the wall or floor mask</td>
+      <td>DINO never boxed it</td>
+      <td>Check the tag list in inspection cell 1. Lower <span class="mono">DINO_BOX_THRESH</span>, or add the class to <span class="mono">OBJECT_PROMPT</span>.</td></tr>
+  <tr><td>A flat wall item (poster, mirror) left in</td>
+      <td>BiRefNet is blind to it and DINO was not told to look</td>
+      <td>Add the class to the prompt. This is the known residual gap, not a tuning failure.</td></tr>
+  <tr><td>The wall itself got erased and inpainted</td>
+      <td>A structural RAM tag reached DINO</td>
+      <td>Add it to <span class="mono">RAM_EXCLUDE</span> / <span class="mono">RAM_EXCLUDE_KW</span>.</td></tr>
+  <tr><td>Halo or fringe around removed objects</td>
+      <td>Matte or inpaint mask too tight</td>
+      <td>Raise <span class="mono">pad</span> (0.05 &rarr; 0.08) or <span class="mono">mask_dilation</span> (0.03 &rarr; 0.05).</td></tr>
+  <tr><td>Imagen <i>added</i> furniture instead of removing it</td>
+      <td><span class="mono">EMPTY_INPAINT_PROMPT</span> is not empty</td>
+      <td>Set it back to <span class="mono">""</span>. See the callout below.</td></tr>
+  <tr><td>Sockets detected all over blank wall</td>
+      <td>DINO hallucinating small classes</td>
+      <td>That is what the <span class="mono">RAM_PLUG_KW</span> gate is for &mdash; confirm RAM++ actually tagged one.</td></tr>
+  <tr><td>Two real walls merged into one mask</td>
+      <td>The API returned a single instance</td>
+      <td>Upstream limitation &mdash; or use <span class="mono">main_normal.ipynb</span>, which splits by plane offset.</td></tr>
+  <tr><td>Mask edges blocky, soft boundaries missed</td>
+      <td>Binary mask, by design</td>
+      <td>Run the matting stage (section 8).</td></tr>
+  <tr><td><span class="mono">Missing key(s) ... bn ...</span> on checkpoint load</td>
+      <td><span class="mono">batch_size</span> config race</td>
+      <td>See the callout below.</td></tr>
+</table>
+
+<div class="callout warn">
+  <div class="ct">Gotcha 1 &mdash; the prompt must be empty</div>
+  Imagen reads the prompt as <b>what to generate in the masked region</b>. A helpful-sounding
+  prompt like <span class="mono">"empty room, bare floor"</span> makes it
+  <b>generate furniture</b> &mdash; it treats the text as a scene description, not an
+  instruction. The empty string is what triggers clean content-aware removal. This is
+  behavioural, not aesthetic.
+</div>
+
+<div class="callout warn">
+  <div class="ct">Gotcha 2 &mdash; the architecture depends on a global config value</div>
+  BiRefNet swaps every <span class="mono">BatchNorm</span> for <span class="mono">nn.Identity</span>
+  when <span class="mono">config.batch_size &le; 1</span>. The fine-tune was trained at
+  batch size 1, so if your kernel imported <span class="mono">config.py</span> while
+  <span class="mono">batch_size</span> was still &gt; 1, the model you build has BN layers the
+  checkpoint does not &mdash; hence <span class="mono">Missing key(s)</span>. The notebook
+  forces the value on the relevant modules <i>before</i> constructing the net:
+<pre style="margin-top:2.5mm;margin-bottom:0">_aspp.config.batch_size = 1
+_decblk.config.batch_size = 1
+class _BS1Config(_bnmod.Config):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k); self.batch_size = 1
+_bnmod.Config = _BS1Config</pre>
+</div>
+
+<div class="callout key">
+  <div class="ct">Two small decisions that carry real weight</div>
+  <b>NEAREST, never bilinear</b>, when resizing the API's binary masks &mdash; bilinear invents
+  grey edge pixels that then threshold inconsistently. And <b>decode the mask list
+  individually</b>, deriving the union from it rather than the other way round &mdash; that is
+  the only thing preserving wall instances.
+</div>
+
+<!-- ========================================================= 7 VARIANTS -->
+<div class="page"></div>
+<h2><span class="num">7</span>The variants are experiments</h2>
+<div class="sub">Every other notebook changes exactly one thing. Keeping them documents what was tried and why the main path won.</div>
+
+<table class="t">
+  <tr><th style="width:36mm">Notebook</th><th style="width:52mm">Changes one thing</th><th>Result</th></tr>
+  <tr><td><b>main_gd.ipynb</b></td><td>&mdash; the baseline</td><td><b>Best. Use this one.</b></td></tr>
+  <tr><td>new_gd.ipynb</td><td>BiRefNet <span class="mono">epoch_15</span></td><td>Checkpoint sweep</td></tr>
+  <tr><td>main_yolo.ipynb</td><td>YOLO-World + fixed class list, no RAM++</td><td>Faster, one model fewer &mdash; but fixed vocabulary</td></tr>
+  <tr><td>main_yolo_nano.ipynb</td><td>Gemini 2.5 Flash Image instead of Imagen</td><td>Loses pixel registration &mdash; see below</td></tr>
+  <tr><td>main_normal.ipynb</td><td>Drops Imagen <i>and</i> the API entirely</td><td>Fast, local, visible-only &mdash; section 9</td></tr>
+</table>
+
+<h3>The clearest lesson in the repo: mask-based vs prompt-based editing</h3>
+
+<table class="vs">
+  <tr>
+    <td><div class="pane">
+      <div class="ph ok">Imagen &mdash; masked inpaint</div>
+      <div class="pb">
+        <div class="step"><b>Takes a mask.</b></div>
+        <div class="step">Rewrites only the masked pixels.</div>
+        <div class="step">Everything else is byte-identical.</div>
+        <div class="verdict" style="color:var(--derive)">Masks transfer back for free.</div>
+      </div>
+    </div></td>
+    <td><div class="pane">
+      <div class="ph bad">Gemini &ldquo;nano banana&rdquo; &mdash; prompt edit</div>
+      <div class="pb">
+        <div class="step"><b>No mask channel at all.</b></div>
+        <div class="step">May move, recolour or re-render pixels <i>outside</i> the region you meant to change.</div>
+        <div class="step">Empty room no longer aligned with the original.</div>
+        <div class="verdict" style="color:var(--warn)">Needs a homography estimate &mdash; which adds its own error.</div>
+      </div>
+    </div></td>
+  </tr>
+</table>
+
+<div class="callout key">
+  <div class="ct">Take-away</div>
+  The capability that mattered here was <b>not image quality</b> &mdash; it was the
+  <b>guarantee about untouched pixels</b>. A mask-based editor gives you a contract;
+  a prompt-based editor gives you a result. When picking a generative component, ask what it
+  promises <i>not</i> to do.
+</div>
+
+<h3>RAM++ &rarr; DINO vs YOLO-World</h3>
+<p>YOLO-World is open-vocab with built-in NMS and is faster &mdash; one model instead of two.
+But its class list is <b>fixed at config time</b>, and rooms are long-tailed: the class you did
+not list is the one in this photo. RAM++ solves the vocabulary problem per image, which is
+worth the extra model. Keep the YOLO variant for speed-constrained deployments where you
+control the furniture distribution.</p>
+
+<!-- ========================================================== 8 MATTING -->
+<div class="page"></div>
+<h2><span class="num">8</span>The matting stage</h2>
+<div class="sub">Turning a hard binary mask into a soft alpha &mdash; and a lesson in how to read a metric.</div>
+
+<p class="lead">Everything so far produces binary masks: stair-stepped edges, and no way to
+represent a curtain fringe or a plant frond. <span class="mono">main_sd.ipynb</span> and
+<span class="mono">main_diff.ipynb</span> refine a wall mask into an alpha.</p>
+
+<h3>Trimap discipline</h3>
+<p>Both notebooks <b>import the same function</b>,
+<span class="mono">generate_trimap.wall_trimap()</span>. That is what makes the comparison
+valid: identical input, so any difference isolates the network. A shared import cannot drift
+the way two copy-pasted preprocessing blocks will.</p>
+
+<p>The trimap source is the <i>raw</i> API wall mask from the untouched photo &mdash;
+deliberately <b>not</b> the object-removed one. Matting must learn from real photographic
+edges; an inpainted edge is synthetic, and the matting network has no business seeing it.</p>
+
+<table class="t">
+  <tr><th style="width:30%"></th><th>SDMatte</th><th>DiffMatte</th></tr>
+  <tr><td><b>Backbone</b></td><td>Stable Diffusion U-Net, ~1.3 B params</td><td>ViT-S, 29 M + tiny diffusion decoder</td></tr>
+  <tr><td><b>Prompt types</b></td><td>trimap / mask / box / points</td><td>trimap only</td></tr>
+  <tr><td><b>Iterations</b></td><td>1 step, denoise in latent space</td><td>N steps, denoise the alpha directly</td></tr>
+  <tr><td><b>VRAM @1024&sup2;</b></td><td>~5 GB (fp16)</td><td>~1.6 GB (fp32)</td></tr>
+</table>
+
+<h3>The head-to-head &mdash; and how to read it</h3>
+<p class="tiny" style="margin-bottom:3mm">50 samples, shared trimap, alpha threshold 0.5.</p>
+
+<table class="stat">
+  <tr>
+    <td><div class="b"><div class="n">0.981</div><div class="l">whole-image IoU<br>(nearly meaningless)</div></div></td>
+    <td><div class="b"><div class="n">1.98%</div><div class="l">of pixels are actually<br>ambiguous</div></div></td>
+    <td><div class="b"><div class="n" style="color:var(--warn)">0.740</div><div class="l"><b>band agreement</b><br>the real number</div></div></td>
+    <td><div class="b"><div class="n">45&times;</div><div class="l">smaller backbone<br>for that result</div></div></td>
+  </tr>
+</table>
+
+<div class="callout key" style="margin-top:5mm">
+  <div class="ct">Read the metric where the method acts</div>
+  Whole-image IoU of 0.98 says almost nothing: 98% of pixels are definite foreground or
+  background that <i>the trimap already decided</i>, so both networks trivially agree there.
+  The informative number is <b>band agreement: 0.740</b> &mdash; inside the 2% of pixels that
+  are genuinely ambiguous, the only pixels matting exists to resolve, the two networks
+  disagree a quarter of the time.<br><br>
+  <b>Always define your metric over the region your method is responsible for.</b> A
+  whole-image average will hide the exact effect you are trying to measure.
+</div>
+
+<p><b>Engineering conclusion:</b> DiffMatte reaches that result with a 45&times; smaller
+backbone and a third of the VRAM. Unless the band disagreement resolves in SDMatte's favour
+on your data, the small model wins.</p>
+
+<h4>Practical notes</h4>
+<ul>
+  <li>SDMatte is built <b>config-only</b>, then <span class="mono">SDMatte.pth</span> is loaded on top.
+      <span class="mono">weights_only=False</span> + <span class="mono">mmap=True</span> are
+      required &mdash; the checkpoint pickles an omegaconf <span class="mono">ListConfig</span>.</li>
+  <li>DiffMatte needs no detectron2; a small <span class="mono">d2shim</span> supplies the few symbols it imports.</li>
+  <li>SDMatte's <span class="mono">points</span> mode cannot encode negatives, and signed blobs
+      collapse the alpha to zero. Trimap is the only mode that works reliably.</li>
+  <li><span class="mono">PROMPT_MODE="trimap"</span> skips RAM++ and DINO entirely &mdash; about
+      4 GB VRAM and 5 s/sample saved.</li>
+  <li>EXIF-rotated samples are normalized <b>in memory</b>, never on disk.</li>
+</ul>
+
+<!-- ======================================================= 9 STRUCTURE -->
+<div class="page"></div>
+<h2><span class="num">9</span>The other road: structure-first</h2>
+<div class="sub"><span class="mono">main_normal.ipynb</span> &mdash; no Imagen, no API, no detector stack. A genuine trade, not a strict improvement.</div>
+
+<p class="lead">Motivated by two real problems with the main path: Imagen is slow and billed,
+and it <b>ghosts</b> &mdash; hallucinating faint content into the emptied room, which the
+segmenter then faithfully segments.</p>
+
+<div class="stage s-detect">
+  <div class="head"><span class="chip">1</span><span class="title">Invert the object mask</span>
+  <span class="models">BiRefNet, fine-tuned epoch_10</span></div>
+  <div class="body">Segment <i>movable objects</i>, then invert &rarr; the wall + floor +
+  ceiling shell. Works because Hypersim's background class set teaches door, window, mirror
+  and ceiling as <b>structure</b> &mdash; the flat-occluder blind spot from section 4 becomes an
+  asset here.</div>
+</div>
+<div class="down">&#9660;</div>
+<div class="stage s-seg">
+  <div class="head"><span class="chip">2</span><span class="title">Depth and normals in one pass</span>
+  <span class="models">Metric3D-v2</span></div>
+  <div class="body">One feed-forward net giving per-pixel metric depth <i>and</i> surface
+  normal. Chosen over Marigold precisely because it is feed-forward &mdash; consistent with the
+  &ldquo;kill Imagen for speed&rdquo; motive.</div>
+</div>
+<div class="down">&#9660;</div>
+<div class="stage s-derive">
+  <div class="head"><span class="chip">3</span><span class="title">Split the point cloud</span>
+  <span class="models">30&deg; cone &rarr; HDBSCAN &rarr; connected components</span></div>
+  <div class="body">Floor / ceiling / wall by the angle between the normal and up &mdash; these
+  are ~90&deg; apart, so the threshold is not delicate. Then wall <i>instances</i> by HDBSCAN
+  on <span class="mono">normal &oplus; W_OFFSET&middot;d</span>, then 2-D connected components
+  for disjoint same-plane pieces.</div>
+</div>
+
+<h3>Why depth is mandatory, not a nice-to-have</h3>
+<p>The motivating case is two <b>jogged sub-walls facing the same direction</b>. They have
+<b>identical normals</b>, and they can be 2-D connected. Neither normal angle nor connectivity
+can tell them apart. Only the <b>plane offset</b> can:</p>
+
+<pre>d = point &middot; n          <span class="c"># signed distance along the shared normal</span></pre>
+
+<p>Two parallel planes at different depths have different <span class="mono">d</span>. That
+single geometric fact is why the pipeline needs a depth model rather than a normals-only one.
+<span class="mono">W_OFFSET</span> trades the two cues off: 0 is pure-normal (same-faced walls
+merge), higher splits more aggressively.</p>
+
+<p class="tiny">Scaling detail worth remembering: HDBSCAN is fit on a 30k-pixel subsample and
+all ~1M wall pixels are then assigned by <b>nearest cluster centroid</b> &mdash;
+<span class="mono">approximate_predict</span> at that scale is far too slow.</p>
+
+<div class="callout good">
+  <div class="ct">Verified on user_2</div>
+  Structure fraction <b>0.995</b> &mdash; correctly leaves an empty hallway as structure.
+  Metric3D-v2 + HDBSCAN found 4 clusters and cleanly split left wall / right wall / far wall /
+  floor / ceiling &rarr; 8 instance masks after connected components. The separation method is
+  validated.
+</div>
+
+<div class="callout warn">
+  <div class="ct">Two limits you are accepting</div>
+  <b>Visible-only.</b> Inversion cannot recover what is behind furniture &mdash; every object
+  leaves a hole, and the amodal output is simply not reproduced. That is the trade: speed and
+  locality in exchange for amodality.<br><br>
+  <b>No safety net.</b> A BiRefNet miss leaves an object as fake surface; a false positive
+  punches a hole in the wall. Unlike the main path, there is no second detector to catch the
+  first one's mistakes. Quality rides entirely on one model.
+</div>
+
+<h3>The checkpoint lesson</h3>
+<table class="t keep">
+  <tr><th style="width:34mm">Checkpoint</th><th style="width:38mm">Structure fraction on an empty hallway</th><th>Verdict</th></tr>
+  <tr><td><span class="mono">epoch_10.pth</span></td><td><b style="color:var(--derive)">0.995</b></td>
+      <td>Correct. This is the one <span class="mono">main_normal</span> uses.</td></tr>
+  <tr><td><span class="mono">epoch_10_new.pth</span></td><td><b style="color:var(--warn)">0.34</b></td>
+      <td>Called 66% of a bare room &ldquo;object&rdquo;. Unusable here; the re-train was cancelled.</td></tr>
+</table>
+
+<div class="callout key">
+  <div class="ct">But note the asymmetry</div>
+  <span class="mono">epoch_10_new</span> is perfectly <b>fine in main_gd.ipynb</b>, where
+  BiRefNet only mattes <i>inside a DINO box</i> and is never asked to judge empty wall. The
+  same checkpoint is unusable in <span class="mono">main_normal</span>, where the whole image
+  is its responsibility.<br><br>
+  <b>A checkpoint is good only relative to the job you give it.</b> Always re-benchmark on the
+  actual downstream task, never on the training metric. That 0.34 is also the honest
+  measurement of the <b>synthetic&rarr;real gap</b>: more epochs on synthetic Hypersim data made
+  the model <i>worse</i> on real photographs.
+</div>
+
+<!-- ======================================================== 10 TRAINING -->
+<div class="page"></div>
+<h2><span class="num">10</span>Training, in brief</h2>
+<div class="sub">Teaching BiRefNet that &ldquo;foreground&rdquo; means &ldquo;everything that is not room structure&rdquo;.</div>
+
+<p class="lead">The stock model segments salient objects. The fine-tune redefines the
+foreground class. Data is <b>Hypersim</b> (Apple) &mdash; photorealistic <i>synthetic</i>
+indoor scenes, CC BY-SA 3.0, with pixel-perfect rendered semantic labels. Labels are free and
+exact, which is exactly why synthetic data is attractive here &mdash; and section 9 is the bill
+for it.</p>
+
+<table class="t">
+  <tr><th style="width:34mm">Notebook</th><th>Method</th></tr>
+  <tr><td><span class="mono">trainer.ipynb</span></td>
+      <td>Guided walkthrough of the first fine-tune: download, prep, train. Heavy steps are
+      flag-guarded and <b>off by default</b>, so <i>Run All</i> stays fast &mdash; a good
+      pattern for a notebook that doubles as documentation.</td></tr>
+  <tr><td><span class="mono">trainer_v2.ipynb</span></td>
+      <td>Proper methodology, below.</td></tr>
+</table>
+
+<h3>The v2 methodology &mdash; worth imitating</h3>
+<ul>
+  <li><b>Split by SCENE, 70/15/15 &mdash; not by frame.</b> Hypersim gives many frames per
+  room. A frame-level split puts near-duplicate views of the same room in both train and test
+  and inflates your metrics enormously. Splitting by scene is the only honest option.</li>
+  <li><b>Phase A:</b> train on TRAIN, monitor VAL each epoch, early-stop on val mean-IoU
+  (max 50 epochs), keep the best checkpoint.</li>
+  <li><b>Phase B:</b> once VAL has served model selection, fold it into training for a few more
+  epochs. The data has done its job; now it can be signal.</li>
+  <li><b>TEST is looked at exactly once</b>, at the very end.</li>
+  <li>Checkpoints and <span class="mono">history.json</span> are written <b>every epoch</b>, so
+  an interrupted run is never a lost run.</li>
+</ul>
+
+<p class="tiny">Hardware target: RTX 5070, 12 GB &rarr; batch size 1 at 640&sup2;. Which is
+precisely why the batch-size-1 BatchNorm swap bites at load time (section 6).</p>
+
+<h2 style="margin-top:12mm"><span class="num">11</span>What to take away</h2>
+<div class="sub">The ideas here transfer well beyond room photos.</div>
+
+<table class="grid">
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">Reframe the impossible half</div>
+      <div class="why">&ldquo;Segment the hidden wall&rdquo; has no solution. &ldquo;Remove the
+      sofa, then segment&rdquo; does. Move the hard part to a model that is good at it.</div>
+    </div></td>
+    <td><div class="card seg">
+      <div class="cn">Ask what a model promises <i>not</i> to do</div>
+      <div class="why">Imagen's guarantee about untouched pixels mattered more than its image
+      quality &mdash; it is what removed an entire re-alignment step.</div>
+    </div></td>
+  </tr>
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">Design around blind spots</div>
+      <div class="why">Not around error rates. Two models that fail on the same inputs are one
+      model with extra latency.</div>
+    </div></td>
+    <td><div class="card seg">
+      <div class="cn">Measure where the method acts</div>
+      <div class="why">Whole-image IoU 0.98 hid a band agreement of 0.74. Scope the metric to
+      the region you are responsible for.</div>
+    </div></td>
+  </tr>
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">A checkpoint is good only for its job</div>
+      <div class="why">Same weights: fine inside a box, catastrophic on a full image.
+      Re-benchmark on the downstream task.</div>
+    </div></td>
+    <td><div class="card seg">
+      <div class="cn">Share preprocessing by import</div>
+      <div class="why">One <span class="mono">wall_trimap()</span> is the only reason the
+      SDMatte/DiffMatte comparison can be trusted.</div>
+    </div></td>
+  </tr>
+  <tr>
+    <td><div class="card seg">
+      <div class="cn">Hide latency you cannot remove</div>
+      <div class="why">MoGe starts first, is collected last, and costs roughly nothing.</div>
+    </div></td>
+    <td><div class="card seg">
+      <div class="cn">Keep your ablations</div>
+      <div class="why">Every variant notebook is a one-variable experiment, and the ADRs record
+      what each one proved.</div>
+    </div></td>
+  </tr>
+</table>
+
+<div class="callout warn">
+  <div class="ct">Open risks, stated plainly</div>
+  <b>VRAM</b> &mdash; four heavy nets on a 12 GB card may need sequential loading.
+  <b>DINO false positives</b> &mdash; mirror &harr; window needs per-deployment thresholds.
+  <b>Synthetic&rarr;real gap</b> &mdash; quantified by the 0.34 regression.
+  <b>Flat unnamed wall items</b> &mdash; the acknowledged residual miss.
+  <b>Cost and non-determinism</b> &mdash; Imagen is billed and stochastic; do not expect
+  bit-reproducible masks across runs.
+</div>
+
+<p class="tiny" style="margin-top:6mm">Deeper written reference:
+<span class="mono">docs/SUMMARY.md</span> &middot; design record:
+<span class="mono">docs/pipeline-design.md</span>, <span class="mono">docs/glossary.md</span>,
+<span class="mono">docs/adr/0001</span>&ndash;<span class="mono">0008</span>.</p>
