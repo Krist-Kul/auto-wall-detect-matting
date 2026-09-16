@@ -18,6 +18,14 @@ Two families of pipeline live here:
 
 **New to the project?** Read [`docs/SUMMARY.md`](docs/SUMMARY.md) first — a full technical
 walkthrough of how the pipeline works and why, written for an engineer picking this up cold.
+Also shipped as [`summary.docx`](summary.docx) for sharing; regenerate it after editing the
+markdown with:
+
+```bash
+pip install python-docx
+python tools/md2docx.py docs/SUMMARY.md summary.docx \
+    "auto-wall-detect-matting" "Project summary — a technical walkthrough"
+```
 
 See [`pipeline.html`](pipeline.html) for the flow diagram, [`docs/`](docs/) for the design
 record.
